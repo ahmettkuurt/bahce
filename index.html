@@ -64,7 +64,7 @@ body{margin:0;background:radial-gradient(120% 85% at 50% 0%,#3b1442 0%,#220f30 4
       <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <ellipse cx="500" cy="725" rx="640" ry="130" fill="url(#ground)"/>
+  <ellipse id="groundEl" cx="500" cy="725" rx="640" ry="130" fill="url(#ground)"/>
   <g id="grass"></g>
   <g id="flowers"></g>
   <g id="front"></g>
@@ -84,6 +84,12 @@ const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.se
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* fit the garden to the screen: narrower, taller scene on phones */
+const portrait=innerWidth<innerHeight;
+const VW=portrait?600:1000, VH=Math.max(560,Math.round(VW*innerHeight/innerWidth));
+const G=VH, C=VW/2, HF=portrait?Math.min(1.6,VH/900):1;
+svg.setAttribute('viewBox',`0 0 ${VW} ${VH}`);
+{const g=document.getElementById('groundEl');g.setAttribute('cx',C);g.setAttribute('cy',G+25);g.setAttribute('rx',VW*.66)}
 
 const palettes=[
   ['#ff5f8f','#ffb3c8','#ffd56b'],
@@ -99,27 +105,27 @@ const SEED_END=1.3, BIG_T=3.4, HEART_T=5.2, BFLY_T=5.8, WAVE_T=9;
 
 /* grass */
 for(let i=0;i<90;i++){
-  const x=rnd(-40,1040),h=rnd(25,80),b=rnd(-16,16);
-  grassG.appendChild(el('path',{d:`M${x} 704 Q${x+b/2} ${704-h/2} ${x+b} ${704-h}`,stroke:pick(['#2e7a4c','#3a8f5a','#256b41']),'stroke-width':rnd(2,4),fill:'none','stroke-linecap':'round',opacity:.9}));
+  const x=rnd(-40,VW+40),h=rnd(25,80),b=rnd(-16,16);
+  grassG.appendChild(el('path',{d:`M${x} ${G+4} Q${x+b/2} ${G+4-h/2} ${x+b} ${G+4-h}`,stroke:pick(['#2e7a4c','#3a8f5a','#256b41']),'stroke-width':rnd(2,4),fill:'none','stroke-linecap':'round',opacity:.9}));
 }
 
 let count=0;
 function flower(x,h,wait,scale,opt={}){
   const pal=opt.pal||pick(palettes);
   const parent=opt.parent||flowersG;
-  const topY=700-h, bend=opt.straight?rnd(-12,12):rnd(-60,60), hx=x+bend*.45;
+  const topY=G-h, bend=opt.straight?rnd(-12,12):rnd(-60,60), hx=x+bend*.45;
   const sway=el('g',{class:'sway'});
-  sway.style.transformOrigin=`${x}px 700px`;
+  sway.style.transformOrigin=`${x}px ${G}px`;
   sway.style.setProperty('--s',rnd(4.5,8)+'s');
   sway.style.animationDelay=(-rnd(0,6))+'s';
 
   const grow=opt.grow||1.4;
-  const stem=el('path',{class:'stem',d:`M${x} 704 Q${x+bend} ${700-h/2} ${hx} ${topY}`,stroke:'#3f9a62','stroke-width':4*scale,pathLength:1});
+  const stem=el('path',{class:'stem',d:`M${x} ${G+4} Q${x+bend} ${G-h/2} ${hx} ${topY}`,stroke:'#3f9a62','stroke-width':4*scale,pathLength:1});
   stem.style.setProperty('--w',wait+'s');stem.style.setProperty('--d',grow+'s');
   sway.appendChild(stem);
 
   [[.35,1],[.55,-1],[.75,1]].slice(0,opt.big?3:2).forEach(([t,side],i)=>{
-    const ly=700-h*t, lx=x+bend*t*(1-t)*2.2;
+    const ly=G-h*t, lx=x+bend*t*(1-t)*2.2;
     const outer=el('g',{transform:`translate(${lx} ${ly}) rotate(${side>0?-25:205}) scale(${scale})`});
     const leaf=el('path',{class:'pop leaf',d:'M0 0 C12 -14 34 -14 46 0 C34 9 12 9 0 0',fill:i%2?'#4fb574':'#3fa264'});
     leaf.style.setProperty('--w',(wait+grow*t)+'s');
@@ -159,17 +165,17 @@ function flower(x,h,wait,scale,opt={}){
 
 /* first bloom: a wave from the centre outwards, tall ones behind */
 const first=[];
-for(let i=0;i<22;i++){
+for(let i=0;i<(portrait?17:22);i++){
   const center=Math.random()<.65;
-  first.push({x:center?rnd(150,850):rnd(10,990),h:rnd(170,420)});
+  first.push({x:center?rnd(VW*.15,VW*.85):rnd(10,VW-10),h:rnd(170,420)*HF});
 }
 first.sort((a,b)=>b.h-a.h).forEach(f=>{
-  flower(f.x,f.h,SEED_END+Math.abs(f.x-500)/500*1.7+rnd(0,.3),rnd(.85,1.25));
+  flower(f.x,f.h,SEED_END+Math.abs(f.x-C)/C*1.7+rnd(0,.3),rnd(.85,1.25));
 });
 /* the giant glowing bloom */
-flower(500,240,BIG_T-1.2,1.7,{big:true,straight:true,grow:1.6,pal:palettes[0],parent:frontG});
+flower(C,240*HF,BIG_T-1.2,portrait?1.45:1.7,{big:true,straight:true,grow:1.6,pal:palettes[0],parent:frontG});
 /* little front row */
-for(let i=0;i<8;i++){const x=rnd(60,940);if(Math.abs(x-500)<90)continue;flower(x,rnd(90,150),SEED_END+.8+Math.abs(x-500)/500*1.5,rnd(.7,.95),{parent:frontG})}
+for(let i=0;i<8;i++){const x=rnd(VW*.06,VW*.94);if(Math.abs(x-C)<VW*.09)continue;flower(x,rnd(90,150)*HF,SEED_END+.8+Math.abs(x-C)/C*1.5,rnd(.7,.95),{parent:frontG})}
 
 /* butterflies */
 const bcols=[['#ff8fb8','#ffd3e4'],['#c9a2ff','#efe0ff'],['#ffc65c','#fff0bf']];
@@ -186,7 +192,7 @@ const bflies=bcols.map(([a,b],k)=>{
   });
   inner.appendChild(el('ellipse',{rx:2.2,ry:11,fill:'#3a1d2e'}));
   g.appendChild(inner);bflyG.appendChild(g);
-  return {g,ph:rnd(0,6),sp:rnd(.18,.3),amp:rnd(260,380),yb:rnd(260,380),s:rnd(.7,1)};
+  return {g,ph:rnd(0,6),sp:rnd(.18,.3),amp:rnd(.26,.38)*VW,yb:G*rnd(.38,.55),s:rnd(.7,1)};
 });
 
 /* falling petals + fireflies */
@@ -203,8 +209,8 @@ function petal(left,top,burst){
   else if(Math.random()<.2)d.style.background='linear-gradient(135deg,#ead3ff,#c07ef0)';
   document.body.appendChild(d);
 }
-for(let i=0;i<34;i++)petal(rnd(0,100)+'vw');
-for(let i=0;i<26;i++){
+for(let i=0;i<(portrait?22:34);i++)petal(rnd(0,100)+'vw');
+for(let i=0;i<(portrait?16:26);i++){
   const f=document.createElement('div');
   f.className='fly';
   f.style.left=rnd(3,97)+'vw';f.style.top=rnd(30,94)+'vh';
@@ -240,7 +246,7 @@ for(let i=0;i<HN;i++){
 }
 let hcx,hcy;
 function layoutHeart(){
-  hcx=W/2;hcy=H*.2;const S=Math.min(W*.9,H)*.0105;
+  hcx=W/2;hcy=H*.2;const S=W<H?W*.016:Math.min(W*.9,H)*.0105;
   for(const p of heart){
     const t=p.t;
     p.tx=hcx+16*Math.pow(Math.sin(t),3)*S*p.k;
@@ -299,7 +305,7 @@ function frame(now){
   }
   if(t>HEART_T+3.5){
     const g=clamp((t-HEART_T-3.5)/2)*(.25+.2*beat(t));
-    fc.globalAlpha=g;const R=Math.min(W*.9,H)*.24;fc.drawImage(sprites[0],hcx-R,hcy-R*1.05,R*2,R*2);
+    fc.globalAlpha=g;const R=(W<H?W*.37:Math.min(W*.9,H)*.24);fc.drawImage(sprites[0],hcx-R,hcy-R*1.05,R*2,R*2);
   }
   fc.globalAlpha=1;
 
@@ -330,7 +336,7 @@ function frame(now){
   bflies.forEach((f,k)=>{
     if(t>BFLY_T+k*1.2)f.g.classList.add('on');
     const tt=t*f.sp+f.ph;
-    const x=500+Math.sin(tt)*f.amp, y=f.yb+Math.sin(tt*2.3)*60+Math.sin(t*3+k)*8;
+    const x=C+Math.sin(tt)*f.amp, y=f.yb+Math.sin(tt*2.3)*60+Math.sin(t*3+k)*8;
     const dir=Math.cos(tt)>=0?1:-1;
     f.g.setAttribute('transform',`translate(${x} ${y}) rotate(${dir*18+Math.sin(t*4+k)*6}) scale(${f.s})`);
   });
@@ -338,7 +344,7 @@ function frame(now){
   /* the garden keeps growing */
   if(!reduce&&t>nextWave&&count<70){
     nextWave=t+rnd(1.6,3);
-    flower(rnd(20,980),rnd(110,330),0,rnd(.75,1.15),{parent:Math.random()<.5?flowersG:frontG});
+    flower(rnd(20,VW-20),rnd(110,330)*HF,0,rnd(.75,1.15),{parent:Math.random()<.5?flowersG:frontG});
   }
 
   requestAnimationFrame(frame);
@@ -352,7 +358,7 @@ document.addEventListener('click',e=>{
   const m=svg.getScreenCTM();
   if(m){
     const p=pt.matrixTransform(m.inverse());
-    const h=Math.max(120,Math.min(560,700-p.y));
+    const h=Math.max(120,Math.min(G-60,G-p.y));
     flower(p.x,h,0,rnd(.95,1.35),{parent:frontG,grow:.9});
   }
   for(let i=0;i<48;i++){
