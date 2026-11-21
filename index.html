@@ -41,10 +41,6 @@ body{margin:0;background:radial-gradient(120% 85% at 50% 0%,#3b1442 0%,#220f30 4
 @keyframes fall{0%{opacity:0;transform:translate(0,0) rotate(0)}8%{opacity:.9}50%{transform:translate(50px,55vh) rotate(220deg)}100%{opacity:.8;transform:translate(-30px,110vh) rotate(460deg)}}
 @keyframes twinkle{from{opacity:.1}to{opacity:1}}
 @keyframes drift{from{translate:0 0}to{translate:34px -44px}}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.01s!important;animation-delay:0s!important;animation-iteration-count:1!important}
-  .petal,.fly{display:none}
-}
 </style>
 </head>
 <body>
@@ -83,7 +79,7 @@ const bflyG=document.getElementById('butterflies');
 const el=(t,a={})=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
 const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=a=>a[Math.floor(Math.random()*a.length)];
-const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduce=false;
 /* fit the garden to the screen: narrower, taller scene on phones */
 const portrait=innerWidth<innerHeight;
 const VW=portrait?600:1000, VH=Math.max(560,Math.round(VW*innerHeight/innerWidth));
